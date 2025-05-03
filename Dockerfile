@@ -1,8 +1,4 @@
-Dockerfile:1
-
--------------------
-
-1 | >>> # Use a Python base image
+# Use a Python base image
 FROM python:3.12-slim
 
 # Set the working directory inside the container
@@ -28,7 +24,3 @@ EXPOSE 5000
 
 # Command to run the Flask app
 CMD ["python", "app.py"]
-
--------------------
-
-ERROR: failed to solve: file with no instructions
