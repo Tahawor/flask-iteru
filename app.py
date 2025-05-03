@@ -1,17 +1,13 @@
 from flask import Flask, request, jsonify, send_file
 from ultralytics import YOLO
+import os
 from PIL import Image
 import io
-import os
 
 app = Flask(__name__)
 
-# Load model once
-model = YOLO("train.pt")  # Make sure this file is in the project root
-
-@app.route('/')
-def index():
-    return jsonify({"message": "YOLO Flask API is live!"})
+# Load the model once at startup to avoid reloading on every request
+model = YOLO("train.pt")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -22,45 +18,26 @@ def predict():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    image_path = "input.jpg"
+    # Save uploaded image temporarily
+    image_path = "uploaded_image.jpg"
     file.save(image_path)
 
+    # Run YOLO prediction
     results = model(image_path)
-    result = results[0]
 
-    # Get labels
-    labels = [model.names[int(cls)] for cls in result.boxes.cls]
+    # Plot detections on the image (without opening OpenCV windows)
+    result_image = results[0].plot(show=False)  # get the image array without OpenCV dependency
 
-    # Plot image with bounding boxes
-    plotted_image = result.plot()
-    image_pil = Image.fromarray(plotted_image)
+    # Convert to a bytes stream for sending via HTTP
+    image_pil = Image.fromarray(result_image)
     image_io = io.BytesIO()
-    image_pil.save(image_io, format='JPEG')
+    image_pil.save(image_io, 'JPEG')
     image_io.seek(0)
 
-    # Send both image and label response
-    response = {
-        "labels": labels
-    }
-
-    # Use multipart response to send JSON and image (or simplify)
-    # For simplicity, just return labels + send image separately
+    # Return the image with bounding boxes
     return send_file(image_io, mimetype='image/jpeg')
 
-@app.route('/labels', methods=['POST'])
-def get_labels():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image uploaded'}), 400
 
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    image_path = "input.jpg"
-    file.save(image_path)
-
-    results = model(image_path)
-    result = results[0]
-    labels = [model.names[int(cls)] for cls in result.boxes.cls]
-
-    return jsonify({"labels": labels})
+if __name__ == "__main__":
+    # Run Flask without debug mode for production
+    app.run(host="0.0.0.0", port=5000, debug=False)
