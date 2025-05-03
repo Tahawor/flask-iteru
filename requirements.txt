@@ -1,4 +1,6 @@
 flask
+opencv-python-headless
 ultralytics
+numpy
 Pillow
-gunicorn
+requests
