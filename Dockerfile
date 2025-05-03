@@ -22,5 +22,5 @@ COPY . .
 # Expose the port the app runs on
 EXPOSE 5000
 
-# Command to run the Flask app
-CMD ["python", "app.py"]
+# Run the Flask app with Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
